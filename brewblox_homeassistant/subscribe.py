@@ -59,25 +59,25 @@ class SubscribingFeature(features.ServiceFeature):
             changed = False
             if(block['desiredState'] == 1 and (block['state']==None or block['state']==0 or self.hass.get_state(self.config.hass_id).state == 'off')):
                 while(self.hass.get_state(self.config.hass_id).state == 'off'):
-                    LOGGER.debug("Waiting for switch....")
+                    LOGGER.info("Waiting for switch....")
                     self.hass.turn_on(self.config.hass_id)
                     time.sleep(2)
-                LOGGER.debug("Switch turned on successfully")
+                LOGGER.info("Switch turned on successfully")
                 block['state']=1
                 changed = True
             elif(block['desiredState'] == 0 and (block['state']==None or block['state']==1 or self.hass.get_state(self.config.hass_id).state == 'on')):
                 while(self.hass.get_state(self.config.hass_id).state == 'off'):
-                    LOGGER.debug("Waiting for switch....")
+                    LOGGER.info("Waiting for switch....")
                     self.hass.turn_off(self.config.hass_id)
                     time.sleep(2)
-                LOGGER.debug("Switch turned off successfully")
+                LOGGER.info("Switch turned off successfully")
                 block['state']=1
                 changed = True
 
             # Publish the updated state, but only if we changed the value
             if(changed == True):
                 data['data'][self.config.block_name]=block
-                LOGGER.debug("Updated block " + self.config.block_name + json.dumps(data))
+                LOGGER.info("Updated block " + self.config.block_name + json.dumps(data))
                 await mqtt.publish(self.app,
                         topic,
                         json.dumps({
