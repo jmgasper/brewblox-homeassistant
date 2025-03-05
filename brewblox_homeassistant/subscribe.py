@@ -30,6 +30,7 @@ class SubscribingFeature(features.ServiceFeature):
         failed = True
         while(failed):
             try:
+                time.sleep(10)
                 await mqtt.listen(app, self.topic, self.on_message)
                 await mqtt.subscribe(app, self.topic)
                 #self.current_state =
@@ -71,7 +72,7 @@ class SubscribingFeature(features.ServiceFeature):
                     self.hass.turn_off(self.config.hass_id)
                     time.sleep(2)
                 LOGGER.info("Switch turned off successfully")
-                block['state']=1
+                block['state']=0
                 changed = True
 
             # Publish the updated state, but only if we changed the value
