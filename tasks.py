@@ -3,7 +3,7 @@ from pathlib import Path
 from invoke import Context, task
 
 ROOT = Path(__file__).parent.resolve()
-IMAGE = 'ghcr.io/jmgasper/brewblox-homebridge'
+IMAGE = 'ghcr.io/jmgasper/brewblox-homeassistant'
 
 
 @task

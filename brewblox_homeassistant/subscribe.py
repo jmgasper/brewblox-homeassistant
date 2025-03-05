@@ -1,23 +1,23 @@
 from aiohttp import web
 import time
 import json
-from brewblox_homebridge.homebridge.HomeBridgeController import *
+from hassapi import Hass
 from brewblox_service import brewblox_logger, features, mqtt
 
-from brewblox_homebridge.models import ServiceConfig
+from brewblox_homeassistant.models import ServiceConfig
 
 LOGGER = brewblox_logger(__name__)
 
 class SubscribingFeature(features.ServiceFeature):
     def __init__(self, app: web.Application):
         super().__init__(app)
+        
         self.config: ServiceConfig = app['config']
         self.topic = f'{self.config.history_topic}/#'
         try:
-            self.controller = HomeBridgeController(self.config.homebridge_host, self.config.homebridge_port, self.config.homebridge_auth_code)
-            LOGGER.debug(self.controller.accessories)
+            self.hass = Hass(hassurl=self.config.hass_url, token=self.config.hass_token)
         except Exception as e:
-            LOGGER.error("Couldn't connect to Homebridge " + e)
+            LOGGER.error("Couldn't connect to Home Assistant " + e)
 
     async def startup(self, app: web.Application):
         """Add event handling
@@ -26,14 +26,14 @@ class SubscribingFeature(features.ServiceFeature):
 
         You can set multiple listeners for each call to subscribe, and use wildcards to filter messages.
         """
-        LOGGER.info("Starting up brewblox_homebridge plugin")
+        LOGGER.info("Starting up brewblox_homeassistant plugin")
         failed = True
         while(failed):
             try:
                 await mqtt.listen(app, self.topic, self.on_message)
                 await mqtt.subscribe(app, self.topic)
                 #self.current_state =
-                LOGGER.info("Current switch state: " + str(int(self.controller.get_value(self.config.homebridge_device))))
+                LOGGER.info("Current switch state: " + self.hass.get_state(self.config.hass_id).state)
                 failed = False
             except Exception as e:
                 LOGGER.error("Error during startup: " + e)
@@ -53,33 +53,25 @@ class SubscribingFeature(features.ServiceFeature):
 
     async def on_message(self, topic: str, payload: str):
         data = json.loads(payload)
-        #self.current_state = int(self.controller.get_value(self.config.homebridge_device))
-
         if(data['key']==self.config.service and self.config.block_name in data['data'].keys()):
             block = data['data'][self.config.block_name]
             # Turn on or off, depending on desired state
             changed = False
-            if(block['desiredState'] == 1 and (block['state']==None or block['state']==0 or int(self.controller.get_value(self.config.homebridge_device))==0)):
-                while(int(self.controller.get_value(self.config.homebridge_device, refresh=True))==0):
+            if(block['desiredState'] == 1 and (block['state']==None or block['state']==0 or self.hass.get_state(self.config.hass_id).state == 'off')):
+                while(self.hass.get_state(self.config.hass_id).state == 'off'):
                     LOGGER.debug("Waiting for switch....")
-                    time.sleep(1)
-                    self.controller.set_value(self.config.homebridge_device, True)
+                    self.hass.turn_on(self.config.hass_id)
+                    time.sleep(2)
                 LOGGER.debug("Switch turned on successfully")
-                #self.current_state = 1
                 block['state']=1
                 changed = True
-            elif(block['desiredState'] == 0 and (block['state']==None or block['state']==1 or int(self.controller.get_value(self.config.homebridge_device))==1)):
-                self.controller.set_value(self.config.homebridge_device, False)
-
-                while(int(self.controller.get_value(self.config.homebridge_device, refresh=True))==1):
+            elif(block['desiredState'] == 0 and (block['state']==None or block['state']==1 or self.hass.get_state(self.config.hass_id).state == 'on')):
+                while(self.hass.get_state(self.config.hass_id).state == 'off'):
                     LOGGER.debug("Waiting for switch....")
-                    time.sleep(1)
-                    self.controller.set_value(self.config.homebridge_device, False)
-
+                    self.hass.turn_off(self.config.hass_id)
+                    time.sleep(2)
                 LOGGER.debug("Switch turned off successfully")
-                #self.current_state = 0
-
-                block['state']=0
+                block['state']=1
                 changed = True
 
             # Publish the updated state, but only if we changed the value
@@ -96,7 +88,7 @@ class SubscribingFeature(features.ServiceFeature):
 def setup(app: web.Application):
     # We register our feature here
     # It will now be automatically started when the service starts
-    LOGGER.info("Staring brewblox-homebridge setup")
+    LOGGER.info("Staring brewblox-assistant setup")
     features.add(app, SubscribingFeature(app))
     LOGGER.info("Setup successful")
 

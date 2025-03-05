@@ -6,8 +6,8 @@ from argparse import ArgumentParser
 
 from brewblox_service import brewblox_logger, http, mqtt, scheduler, service
 
-from brewblox_homebridge import subscribe
-from brewblox_homebridge.models import ServiceConfig
+from brewblox_homeassistant import subscribe
+from brewblox_homeassistant.models import ServiceConfig
 
 LOGGER = brewblox_logger(__name__)
 
@@ -17,7 +17,7 @@ def create_parser() -> ArgumentParser:
     # We can add more arguments here before sending the parser back to brewblox-service
     # The parsed values for all arguments are placed in app['config']
     # For documentation see https://docs.python.org/3/library/argparse.html
-    parser: ArgumentParser = service.create_parser(default_name='brewblox_homebridge')
+    parser: ArgumentParser = service.create_parser(default_name='brewblox_homeassistant')
 
     # This will be used by publish_example
     # Note how we specify the type as float
@@ -26,29 +26,24 @@ def create_parser() -> ArgumentParser:
                         type=float,
                         default=5)
 
-    # This will be used to map the block name to a Homebridge device name
+    # This will be used to map the block name to a Home Assistant device ID
     parser.add_argument('--block-name',
                         help='The Brewblox block name to monitor',
                         type=str)
 
-    # The hostname of the Homebridge server
-    parser.add_argument('--homebridge-host',
-                        help='The Homebridge host URL / FQDN',
+    # The URL of the Home Assistant server, including port
+    parser.add_argument('--hass_url',
+                        help='The Home Assistant host URL / FQDN',
                         type=str)
 
-    # The port of the Homebridge server
-    parser.add_argument('--homebridge-port',
-                        help='The Homebridge port',
+    # The token to use with the API of the Home Assistant server
+    parser.add_argument('--hass_token',
+                        help='The Home Assistant long term token',
                         type=str)
 
-    # The auth code to use when authenticating with Homebridge
-    parser.add_argument('--homebridge-auth-code',
-                        help='The Homebridge auth code',
-                        type=str)
-
-    # The homebridge device to map to the block name
-    parser.add_argument('--homebridge-device',
-                        help='The Homebridge device name',
+    # The Home Assistant device ID to tie to the Brewblox block
+    parser.add_argument('--hass_id',
+                        help='The Home Assistant device ID',
                         type=str)
 
     # The Brewblox service that holds the block

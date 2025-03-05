@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "brewblox-homebridge"
+name = "brewblox-homeassistant"
 version = "0.0.1"
-description = "Brewblox service that can control Homebridge switches"
+description = "Brewblox service that can control Homeassistant switches"
 authors = ["Justin Gasper <jmgasper@gmail.com>"]
 license = "MIT"
 readme = "README.md"
@@ -11,6 +11,7 @@ python = ">=3.9,<4"
 brewblox-service = "^3.1.2"
 cryptography = "40.0.1"
 requests = "^2.31.0"
+hassapi = "^0.2.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

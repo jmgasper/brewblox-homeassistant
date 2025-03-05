@@ -12,9 +12,8 @@ class ServiceConfig(BaseServiceConfig):
     """
     poll_interval: float
     block_name: str
-    homebridge_host: str
-    homebridge_port: str
-    homebridge_auth_code: str
-    homebridge_device: str
+    hass_url: str
+    hass_token: str
+    hass_id: str
     service: str
 

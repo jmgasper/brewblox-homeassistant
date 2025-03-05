@@ -18,8 +18,8 @@ WORKDIR /app
 COPY --from=base /wheeley /wheeley
 
 RUN set -ex \
-    && pip3 install --no-index --find-links=/wheeley brewblox_homebridge \
+    && pip3 install --no-index --find-links=/wheeley brewblox_homeassistant \
     && rm -rf /wheeley \
     && pip3 freeze
 
-ENTRYPOINT ["python3", "-m", "brewblox_homebridge"]
+ENTRYPOINT ["python3", "-m", "brewblox_homeassistant"]
