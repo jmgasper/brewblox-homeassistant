@@ -1,4 +1,4 @@
-# HomeAssistant Service
+# Home Assistant Service
 
 This package contains a simple [Home Assistant](https://www.home-assistant.io/) service implementation that can control Home Assistant switches.  In my personal setup, this is used in place of SSRs to control pumps and heating elements.  [Zigbee switches](https://www.ikuu.com.au/product/double-power-point-ip54/) have been installed and integrated with Home Assistant via [Zigbee2MQTT](https://www.zigbee2mqtt.io)
 
