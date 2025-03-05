@@ -89,7 +89,7 @@ class SubscribingFeature(features.ServiceFeature):
 def setup(app: web.Application):
     # We register our feature here
     # It will now be automatically started when the service starts
-    LOGGER.info("Staring brewblox-assistant setup")
+    LOGGER.info("Starting brewblox-assistant setup")
     features.add(app, SubscribingFeature(app))
     LOGGER.info("Setup successful")
 
