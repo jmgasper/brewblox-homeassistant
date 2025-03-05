@@ -25,5 +25,5 @@ flake8-quotes = "*"
 invoke = "==2.*"
 
 [build-system]
-requires = ["poetry>=0.12", "cryptography==40.0.1"]
+requires = ["poetry==1.8.5", "cryptography==40.0.1"]
 build-backend = "poetry.masonry.api"
