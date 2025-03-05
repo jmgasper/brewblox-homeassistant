@@ -39,10 +39,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install poetry wheel
+          pip install poetry==1.8.5 wheel
           poetry install
-          poetry self add poetry-plugin
-
 
       - name: Build
         run: |
