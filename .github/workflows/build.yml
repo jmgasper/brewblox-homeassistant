@@ -41,6 +41,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry wheel
           poetry install
+          poetry self add poetry-plugin
+
 
       - name: Build
         run: |
