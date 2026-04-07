@@ -35,17 +35,23 @@ class SubscribingFeature(features.ServiceFeature):
         You can set multiple listeners for each call to subscribe, and use wildcards to filter messages.
         """
         LOGGER.info('Starting up brewblox_homeassistant plugin')
-        while True:
+        await mqtt.listen(app, self.topic, self.on_message)
+
+        while not mqtt.fget(app).ready.is_set():
             try:
-                await mqtt.listen(app, self.topic, self.on_message)
-                await mqtt.subscribe(app, self.topic)
-                LOGGER.info('Current switch state: %s', self._get_switch_state())
-                LOGGER.info('Startup successful')
-                return
-            except Exception:
-                LOGGER.exception('Error during startup')
-                await self._cleanup_subscription(app)
-                await asyncio.sleep(3)
+                LOGGER.info('Waiting for MQTT connection before subscribing to %s', self.topic)
+                await asyncio.wait_for(mqtt.fget(app).ready.wait(), timeout=5)
+            except asyncio.TimeoutError:
+                continue
+
+        try:
+            await mqtt.subscribe(app, self.topic)
+            LOGGER.info('Current switch state: %s', self._get_switch_state())
+            LOGGER.info('Startup successful')
+        except Exception:
+            LOGGER.exception('Error during startup')
+            await self._cleanup_subscription(app)
+            raise
 
     async def shutdown(self, app: web.Application):
         """Shutdown and remove event handlers
