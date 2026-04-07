@@ -1,7 +1,7 @@
 import asyncio
 import json
 from time import monotonic
-from typing import Any
+from typing import Any, Optional
 
 from aiohttp import web
 from hassapi import Hass
@@ -18,7 +18,7 @@ class SubscribingFeature(features.ServiceFeature):
         self.config: ServiceConfig = app['config']
         self.topic = f'{self.config.state_topic}/{self.config.service}/#'
         self.command_lock = asyncio.Lock()
-        self.last_desired_state: int | None = None
+        self.last_desired_state: Optional[int] = None
         self.last_command_at = 0.0
         self.command_retry_interval = max(float(self.config.poll_interval), 5.0)
         try:
@@ -65,7 +65,7 @@ class SubscribingFeature(features.ServiceFeature):
         except Exception:
             LOGGER.debug('Ignoring MQTT unlisten failure for %s', self.topic, exc_info=True)
 
-    def _get_switch_state(self) -> str | None:
+    def _get_switch_state(self) -> Optional[str]:
         try:
             entity_state = self.hass.get_state(self.config.hass_id)
         except Exception:
@@ -74,7 +74,7 @@ class SubscribingFeature(features.ServiceFeature):
         return getattr(entity_state, 'state', None)
 
     @staticmethod
-    def _normalize_desired_state(value: Any) -> int | None:
+    def _normalize_desired_state(value: Any) -> Optional[int]:
         if isinstance(value, bool):
             return int(value)
         if isinstance(value, int) and value in (0, 1):
@@ -87,7 +87,7 @@ class SubscribingFeature(features.ServiceFeature):
                 return 0
         return None
 
-    def _extract_desired_state(self, payload: dict[str, Any]) -> int | None:
+    def _extract_desired_state(self, payload: dict[str, Any]) -> Optional[int]:
         if payload.get('key') != self.config.service:
             return None
 
