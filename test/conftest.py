@@ -1,90 +1,71 @@
-"""
-Master file for pytest fixtures.
-Any fixtures declared here are available to all test functions in this directory.
-"""
-
-
 import logging
-
-import pytest
-from aiohttp import test_utils
-from brewblox_service import brewblox_logger, features, service, testing
-
-from brewblox_homebridge.models import ServiceConfig
-
-LOGGER = brewblox_logger(__name__)
+import sys
+import types
 
 
-@pytest.fixture(scope='session', autouse=True)
-def log_enabled():
-    """Sets log level to DEBUG for all test functions.
-    Allows all logged messages to be captured during pytest runs"""
-    logging.getLogger().setLevel(logging.DEBUG)
-    logging.captureWarnings(True)
+def _install_brewblox_service_stub():
+    if 'brewblox_service' in sys.modules:
+        return
 
+    brewblox_service = types.ModuleType('brewblox_service')
 
-@pytest.fixture
-def app_config() -> ServiceConfig:
-    return ServiceConfig(
-        # From brewblox_service
-        name='test_app',
-        host='localhost',
-        port=1234,
-        debug=True,
-        mqtt_protocol='mqtt',
-        mqtt_host='eventbus',
-        mqtt_port=1883,
-        mqtt_path='/eventbus',
-        history_topic='brewcast/history',
-        state_topic='brewcast/state',
+    def brewblox_logger(name: str):
+        return logging.getLogger(name)
 
-        # From this service
-        poll_interval=5,
+    class ServiceFeature:
+        def __init__(self, app):
+            self.app = app
+
+    _features_key = '_features'
+
+    def add(app, feature):
+        app.setdefault(_features_key, {})[type(feature)] = feature
+
+    def get(app, cls):
+        return app[_features_key][cls]
+
+    async def _noop(*args, **kwargs):
+        return None
+
+    brewblox_service.brewblox_logger = brewblox_logger
+    brewblox_service.features = types.SimpleNamespace(
+        ServiceFeature=ServiceFeature,
+        add=add,
+        get=get,
+    )
+    brewblox_service.mqtt = types.SimpleNamespace(
+        listen=_noop,
+        subscribe=_noop,
+        unsubscribe=_noop,
+        unlisten=_noop,
     )
 
+    models = types.ModuleType('brewblox_service.models')
 
-@pytest.fixture
-def sys_args(app_config: ServiceConfig) -> list:
-    return [str(v) for v in [
-        'app_name',
-        '--name', app_config.name,
-        '--poll-interval', app_config.poll_interval,
-        '--debug',
-    ]]
+    class BaseServiceConfig:
+        def __init__(self, **kwargs):
+            for key, value in kwargs.items():
+                setattr(self, key, value)
 
+    models.BaseServiceConfig = BaseServiceConfig
 
-@pytest.fixture
-def app(app_config):
-    app = service.create_app(app_config)
-    return app
+    sys.modules['brewblox_service'] = brewblox_service
+    sys.modules['brewblox_service.models'] = models
 
 
-@pytest.fixture
-async def setup(app):
-    """
-    This fixture is defined here so it can be overriden later.
-    If you wish to call setup() for various features at the start of your tests,
-    you can override this fixture, and use it to do so.
-    """
+def _install_hass_stub():
+    if 'hassapi' in sys.modules:
+        return
+
+    hassapi = types.ModuleType('hassapi')
+
+    class Hass:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    hassapi.Hass = Hass
+    sys.modules['hassapi'] = hassapi
 
 
-@pytest.fixture
-async def client(app, setup, aiohttp_client, aiohttp_server):
-    LOGGER.debug('Available features:')
-    for name, impl in app.get(features.FEATURES_KEY, {}).items():
-        LOGGER.debug(f'Feature "{name}" = {impl}')
-    LOGGER.debug(app.on_startup)
-
-    test_server: test_utils.TestServer = await aiohttp_server(app)
-    test_client: test_utils.TestClient = await aiohttp_client(test_server)
-    return test_client
-
-
-@pytest.fixture(scope='session')
-def mqtt_container():
-    with testing.docker_container(
-        name='mqtt-test-container',
-        ports={'mqtt': 1883},
-        args=['ghcr.io/brewblox/mosquitto:develop'],
-    ) as ports:
-        yield ports
+_install_brewblox_service_stub()
+_install_hass_stub()
